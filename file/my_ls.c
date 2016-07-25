@@ -2,7 +2,7 @@
 #include<time.h>                    
 #include<unistd.h>
 #include<sys/stat.h>
-#include<sys/types.h>        //不完全，缺少容错性，及链接显示问题和执行权限
+#include<sys/types.h>        //不完全，缺少容错性，及显示链接文件
 #include<stdlib.h>
 #include<grp.h>              
 #include<pwd.h>
@@ -321,7 +321,7 @@ int main(int argc,char *argv[])
 		case 5:
 		case 6:
 		case 7:
-		case 8:printf("只接受四个以下的参数，三个参数时第二个参数为a l R的组合\n");
+		case 8:printf("只接受四个以下的参数，三个参数时第二个参数为a l R i n f r的组合\n");
 	}
 }
 

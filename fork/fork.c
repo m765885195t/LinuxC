@@ -13,22 +13,27 @@ int main(void)
 {
     pid_t pid;
     
-    printf("%d\n","abcd");
-    printf("开始");
 
-    pid=fork();
-    switch(pid)
-    {
-        case 0:
-            while(1)
-            {
-                printf( "我是子进程getpid%d,我的父进程getppid%d\n",getpid(),getppid());
-                sleep(3);
-            }
-        case -1:printf("进程创建失败");break;
-        default:
-            printf("我是父进程getpid%d,我的子进程pid%d,我自己的父进程getppid%d,我死了\n",getpid(),pid,getppid());
-            exit(0);
-
+    pid=vfork();
+    
+    if(pid<0){
+        printf("fork error\n");
     }
+
+    else if(pid==0){
+        printf("子进程所属父进程的id%d\n",getppid());
+        printf("子进程的pid%d\n",getpid());
+        //getpgrp()相当于调用getpgid(0);
+        printf("子进程所属的组id%d\n",getpgrp());
+        printf("子进程所属的组id%d\n",getpgid(0));
+        //getpgid()用来取得参数pid指定的进程所属的进程组码
+        //参数为0则回去当前进程的组码;
+        printf("子进程所属的组id%d\n",getpgid(getpid()));
+        exit(0);
+    }
+    
+    printf("父进程的id%d\n",getpid());
+    printf("父进程是该进程组的组长\n");
+    printf("父进程所属的组id%d\n",getpgid(0));
+    return 0;
 }

@@ -16,6 +16,7 @@
 #include<string.h>
 #include<fcntl.h>
 
+//守护进程
 int init_daemon(void){
     
     pid_t pid;

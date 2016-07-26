@@ -15,43 +15,38 @@
 #include<dirent.h>
 #include<sys/stat.h>
 
-void zx(char *a[]);
-char** ml(void);
+void ml(void);
 
-int main(int argc,char *argv[]){
+int main(){
 
-    char **b;
-    char *a[4]={"ls","-al","/"};
-    a[3]=NULL;                         //长度不够会引起缓存溢出
     
-   // while(1){
-        printf("mshell:");   //不加换行留在缓冲区?
+    //长度不够会引起缓存溢出 
+    // while(1){
+
+        printf("mshell:");  
+        //不加换行留在缓冲区?
         //解析输入的命令 
-    
-        b=ml();
-   //     zx(a);
-        printf("2%s%s%s\n",b[0],b[1],b[2]);
-        
 
-         zx(b);
+        ml();
+    
         //为什么1不出来2也就不出来
         //而shell加个换行符就不出来了
 
-   // }
+  //  }
     return 0;
 
 }
 
 //解析输入的命令
-char** ml(void){
+void ml(void){
         
-    char a[256],*p,*b[256],**e;
+    char a[256],*p,*b[256];
     int i=0,j=0,k,n,t;
-    e=b;
 
     fgets(a,sizeof(a),stdin);
     
-    if(strlen(a)>=256){
+    if(strlen(a)>=256)
+    {
         printf("输入字过长,退出程序");
         exit(-1);
     }
@@ -82,7 +77,7 @@ char** ml(void){
             p=a;
         }
 
-       // printf("%s\n",p);
+        printf("%s\n",p);
         b[t]=p;
 
         
@@ -102,51 +97,41 @@ char** ml(void){
         }
     }
     
-    //printf("1%s%s%s\n",e[0],e[1],e[2]);
+    printf("1%s%s%s\n",b[0],b[1],b[2]);
     //最后一定要加上NULL;
 
-    return e;
-}
-
-//建立新进程,在子进程中执行程序,父挂起
-void zx(char **a){   //a参数表
-    
     int stat_val;
     pid_t pid;
 
-    printf("3%s%s%s\n",a[0],a[1],a[2]);
     pid=fork();
 
-    if(pid<0){
+    if(pid<0)
+    {
         printf("创建进程失败;");
         exit(-1);
     }
 
-    if(pid==0){
-        
-        
-        printf("3%s%s%s\n",a[0],a[1],a[2]);
-
-
-        execvp(a[0],a);   //子进程执行其他程序
+    if(pid==0)
+    {
+        execvp(b[0],b);   //子进程执行其他程序
         exit(1);
     }
 
-    if(pid>0){
-        wait(&stat_val);            //父进程等待中
-        if(WIFEXITED(stat_val)){
+    if(pid>0)
+    {
+        wait(&stat_val);   
+        
+        //父进程等待中
+        if(WIFEXITED(stat_val))
+        {
             printf("执行成功");
-            return ;
         }
-        else{
+        else
+        {
             printf("异常退出");
             exit(0);
         }
     }
-    
-
-
 }
 
-//执行程序
 

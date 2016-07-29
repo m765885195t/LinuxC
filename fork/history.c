@@ -13,27 +13,22 @@
 
 int main()
 {
-    int fd,i=0;
+    int fd,i=0,j;
     char a,b[120];
     fd=open("/home/motian/linuxC/fork/h",O_RDONLY);
-   
-    while(read(fd,&a,1))
+   printf("dkd\n");
+    while( (j=read(fd,&a,1))!=0 );
     {
-        if(a!='\0')
+         printf("lll\n");   
+        if(a=='+')
         {
-            
-            if(a=='@')
-            {
-                a='\0';
-                printf("%s\n",b);
-                i=0;
-            }
-            else
-            {
-                b[i++]=a;
-            }
-
-
+            a='\0';
+            printf("%s\n",b);
+            i=0;
+        }
+        else
+        {
+            b[i++]=a; 
         }
     }
 }

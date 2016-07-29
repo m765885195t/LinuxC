@@ -12,51 +12,58 @@
 #include<sys/wait.h>
 #include<unistd.h>
 #include<fcntl.h>
-#include<dirent.h>                //后台有问题
+#include<dirent.h>                
 #include<sys/stat.h>              // 修改函数名
 #include<signal.h>
 #include<stdio_ext.h>
 
-void shell(void);
-void f(int);
+char his_command[256];
 
-void f(int signum) //接收到终止信号时的处理
-{    
-    printf("\n");
-}
 
 //解析命令并执行程序
 void shell(void)
 {
     
-    char a[256],*b[100],*c[100];   //a输入命令   b命令表
-    int i,j,k,t,n=1,x=0,fd,z=0,fd1;
-    pid_t pid,pid2;
-    int stat_val,stat_val1;
-    int pipefd[2];
-    char ch;
+    char in_order[256];
+    char *par_order[100];           //解析命令
+    char *pipe_order[100];
+    char  option='\0';     //接受选项 > < | &
+  
+    int number,len_order;  
+    int i,j,k;
+
+    memset(in_order,0,256);
+
+    fgets(in_order,sizeof(in_order),stdin);  //输入命令
     
-    memset(a,0,256);
 
-    fgets(a,sizeof(a),stdin);  //输入命令
+    if(in_order[0]=='\n')
+    {
+        return ;
+    }
     
-    a[strlen(a)-1]='@';            //清'\n'
+    len_order=strlen(in_order);
 
-    fd1=open("/home/motian/linuxC/fork/h",O_CREAT|O_WRONLY|O_APPEND);                      
-    write(fd1,a,strlen(a));                 //为什么历史命令加不了
-    close(fd1);
+    /*
+    int historyfd;
+    in_order[len_order-1]='+';         
 
-    a[strlen(a)-1]='\0';
+    historyfd=open("/home/motian/linuxC/fork/h",O_CREAT|O_WRONLY|O_APPEND);                      
+    write(historyfd,in_order,len_order);                 //为什么历史命令加不了
+    close(historyfd);
+    */
+    in_order[len_order-1]='\0';
 
+    int n=1;
     while(1)
     {
-        for(i=0,k=0,t=0;a[i];i++)
+        for(i=0,k=0,number=0;in_order[i];i++)
         {
-            if(a[i]==' ')    //目前不处理多个空格的
+            if(in_order[i]==' ')    //目前不处理多个空格的
             {
                 if(i>k)
                 {
-                    t++;
+                    number++;
                     k=i;
                 }    
             }
@@ -65,99 +72,139 @@ void shell(void)
         if(n)
         {
             n--;
-            b[t+1]=NULL;        //换一种方法
+            par_order[number+1]=NULL;        //换一种方法
         }
         
-        if(t)
+        if(number)
         {
-            b[t]=(a+k+1);
-            a[k]='\0';  
+            par_order[number]=(in_order+k+1);
+            in_order[k]='\0';  
         }
         else
         {
-            b[t]=a;
+            par_order[number]=in_order;
+            i=0;
             break;
         }
     }
-
-    i=0;
     
-    while(b[i]!=NULL)
+    int fd;
+    while(par_order[i]!=NULL)
     {
-        if(x!=1 && x!=2 && strcmp(b[i],"|")==0 )
+        if( option!='>' && option!='<' && strcmp(par_order[i],"|")==0 )
         {
-            x=4;
+            option='|';
             j=0;
-            b[i++]=NULL;
-            while(b[i]!=NULL)
+            par_order[i++]=NULL;
+            while(par_order[i]!=NULL)
             {
-                c[j++]=b[i++];
+                pipe_order[j++]=par_order[i++];
             }
-            c[j]=NULL;
+            pipe_order[j]=NULL;
             break;
         }
         
-        if (x!=2  && strcmp(b[i],">")==0)
+        if (option!='<' && strcmp(par_order[i],">")==0)
         {
-           fd=creat(b[i+1],0644);
-            x=1;
-            b[i]=NULL;
+           fd=creat(par_order[i+1],0644);
+            option='>';
+            par_order[i]=NULL;
             break;
         }
     
-        if(x!=1 && strcmp(b[i],"<")==0)
+        if(option!='>' && strcmp(par_order[i],"<")==0)
         {
-            fd=open(b[i+1],O_RDONLY);
-            x=2;
-            b[i]=NULL;
+            fd=open(par_order[i+1],O_RDONLY);
+            option='<';
+            par_order[i]=NULL;
             break;
         }
-        if(x!=1 && x!=2 && strcmp(b[i],"&")==0 )
+        if(option!='>' && option!='<' && strcmp(par_order[i],"&")==0 )
         {
-            x=3;
-            b[i]=NULL;
+            option='&';
+            par_order[i]=NULL;
         }
 
         i++;
     }
     
-    if(!strcmp(b[0],"exit") || !strcmp(b[0],"logout"))
+    if(!strcmp(par_order[0],"exit") || !strcmp(par_order[0],"logout"))
     {
         exit(0);
     }
     
-    //检查命令
-   /*
-   char *path[]={"./","/usr/bin","/bin",NULL};
-    int g=0,flag=0;
-    DIR* dp;
-    struct dirent* dirp;
-
-    while(path[g]!=NULL)
+    if(!strcmp(par_order[0],"cd"))
     {
-        dp=opendir(path[g]);
-        while( (dirp = readdir(dp) ) != NULL)
+        int flag=0;
+        if(par_order[1]==NULL || !strcmp(par_order[1],"~"))  //cd
         {
-            if( strcmp(dirp->d_name,b[0])==0)
-            {
-                closedir(dp);
+            strcpy(his_command,"/home/motian");
+            if( chdir("/home/motian") == 0 )
                 flag=1;
-            }
+            return ;
         }
-        g++;
-    }
-
-    if(!flag)                 //回车符的判断
-    {
-        printf("没有此命令\n");
+        if( !strcmp(par_order[1],".") || !strcmp(par_order[1],"..") )
+        {
+            flag=1;
+        }
+        /*
+        if(b[1][0]=='-')
+        {
+            if( chdir(his_command) == 0 )
+                flag=1;                     // cd -实现方法
+            return ;
+        }
+        */
+        
+        strcpy(his_command,par_order[1]);
+        if( chdir(par_order[1]) == 0 )
+            flag=1;
+        
+        if(!flag)
+        {
+            printf("没有那个文件或目录\n");
+        }
         return ;
     }
 
-   */
+    //检查命令
+    {
+        
+        char *path[]={"./","/usr/bin","/bin",NULL};
+        int g=0,flag=0;
+        DIR* dp;
+        struct dirent* dirp;
 
-    //命令
-//-------------------------------------------
-    //执行
+        while(path[g]!=NULL)
+        {
+            dp=opendir(path[g]);
+            while( (dirp = readdir(dp) ) != NULL)
+            {
+                if( strcmp(dirp->d_name,par_order[0])==0)
+                {
+                    closedir(dp);
+                    flag=1;
+                }
+            }
+            g++;
+        }
+
+        if(!flag)           
+        {
+            printf("没有此命令\n");
+            return ;
+        }
+    }
+
+
+//　　　　命令解析
+//--------------------------------
+//　　　  执行命令
+
+
+    int stat_val,stat_val1;
+    pid_t pid,pid2;
+
     pid=fork();
 
     if(pid<0)
@@ -168,58 +215,63 @@ void shell(void)
     
     if(pid==0)
     {
-        if(x==1)            //>
+        if(option=='>')            //>
         {
             dup2(fd,1);
-            execvp(b[0],b);
+            execvp(par_order[0],par_order);
+            exit(0);
         }
-        else if(x==2)         //<
+        else if(option=='<')         //<
         {
             dup2(fd,0);
-            execvp(b[0],b);
+            execvp(par_order[0],par_order);
+            exit(0);
         }
         
-        else if(x==4) //管道
+        else if(option=='|') //管道
         {
-            
+            int pipefd[2];
+
             pipe(pipefd);
             pid2=fork();
 
             if(pid2>0)
-            {
-            
+            {  
                 waitpid(pid2,&stat_val1,0);      
                 close(pipefd[1]);      //先关写端
                 dup2(pipefd[0],0);     //重定向读端到标准输入流
-                execvp(c[0],c);
+                execvp(pipe_order[0],pipe_order);
+                exit(0);
             }
 
             if(pid2<0)
             {
                 printf("进程创建失败\n");
+                exit(0);
             }
 
             if(pid2==0)
             {
                 close(pipefd[0]);     //先关读端
                 dup2(pipefd[1],1);    //重定向写端到标准输出流
-                execvp(b[0],b);  
+                execvp(par_order[0],par_order);  
+                exit(0);
             }
         }
 
         else
         {
-            execvp(b[0],b); 
+            execvp(par_order[0],par_order); 
+            exit(0);
         }
-
-        exit(0);
     }
 
     if(pid>0)
     {
-        if(!(x==3))     //后台等
+        if(!(option=='&'))     //后台等
         {    
-            waitpid(pid,&stat_val,0);     
+            waitpid(pid,&stat_val,0);
+            return ;
         }
     }
 }
@@ -228,11 +280,24 @@ void shell(void)
 //主函数
 int main()
 {
+
+    char dir[256],*p;
     while(1)
     {
-        signal(SIGINT,f);
-        printf("\33[7mmotian\033[0m:");
+
+        printf("\033[01;32mmotian\033[0m:");
+        getcwd(dir,256);
+
+        if(!strncmp(dir,"/home/motian",12))
+        {
+            p=dir+12;
+            printf("\033[01;34m~%s\033[0m$ ",p);
+        } 
+        else
+        {
+            printf("\033[01;34m%s\033[0m$ ",dir);
+        }
+        
         shell();
-        fflush(stdin);
     }
 }

@@ -1,0 +1,12 @@
+总用量 72
+-rwxrwxr-x 1 motian motian 8816 7月  28 10:20 1
+-rw-rw-r-- 1 motian motian  553 7月  28 10:20 1.c
+-rwxrwxr-x 1 motian motian 8784 7月  27 21:39 2
+-rw-rw-r-- 1 motian motian  583 7月  27 21:39 2.c
+-rwxrwxr-x 1 motian motian 8696 7月  28 10:15 3
+-rw-rw-r-- 1 motian motian  461 7月  28 10:17 3.c
+-rw-r--r-- 1 motian motian    0 7月  29 11:32 4
+-rwxrwxr-x 1 motian motian 8824 7月  27 21:38 a.out
+-rw-rw-r-- 1 motian motian  351 7月  26 19:34 daemon.c
+-rw-rw-r-- 1 motian motian  432 7月  27 15:27 fork.c
+-rw-rw-r-- 1 motian motian  858 7月  24 22:30 命令解析映射表.c

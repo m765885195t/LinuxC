@@ -10,25 +10,27 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 #include<unistd.h>
+#include<string.h>
 
 int main()
 {
-    int fd,i=0,j;
-    char a,b[120];
+    int fd,i=0,len;
+    char *p,a[120];
     fd=open("/home/motian/linuxC/fork/h",O_RDONLY);
-   printf("dkd\n");
-    while( (j=read(fd,&a,1))!=0 );
+
+    read(fd,&a,120);
+    
+    len=strlen(a);
+    
+    p=a;
+
+    for(i=0;i<len;i++)
     {
-         printf("lll\n");   
-        if(a=='+')
+        if(a[i]=='+')
         {
-            a='\0';
-            printf("%s\n",b);
-            i=0;
-        }
-        else
-        {
-            b[i++]=a; 
+            a[i]='\0';
+            printf("%s\n",p);
+            p=a+i+1;
         }
     }
 }

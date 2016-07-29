@@ -176,7 +176,7 @@ void shell(void)
     //检查命令
     {
         
-        char *path[]={"/usr/bin","/bin",NULL};
+        char *path[]={"./","/usr/bin","/bin",NULL};
         int g=0,flag=0;
         DIR* dp;
         struct dirent* dirp;
@@ -198,6 +198,7 @@ void shell(void)
         if(!flag)           
         {
             printf("没有此命令\n");
+            return ;
         }
     }
 
@@ -281,10 +282,7 @@ void shell(void)
     }
 }
 
-void f(int signal1)
-{
 
-}
 //主函数
 int main()
 {
@@ -292,7 +290,7 @@ int main()
     char dir[256],*p;
     while(1)
     {
-        signal(SIGINT,f);
+        singal(SIGINT,SIG_IGN);
         printf("\033[01;32mmotian\033[0m:");
         getcwd(dir,256);
 

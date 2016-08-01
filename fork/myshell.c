@@ -19,6 +19,32 @@
 
 char his_command[256];
 
+void history(void)        //历史记录
+{
+    int fd,len,i;
+    char *p,his[120];
+    static int number=1;
+
+    fd=open("/home/motian/linuxC/fork/.myshellhistory",O_RDONLY);
+
+    read(fd,&his,120);
+
+    len=strlen(his);
+
+    p=his;
+
+    for(i=0;i<len;i++)
+    {
+        if(his[i]=='+')
+        {
+            his[i]='\0';
+            printf("%d  ",number);
+            printf("%s\n",p);
+            p=his+1+i;
+            number++;
+        }
+    }
+}
 
 //解析命令并执行程序
 void shell(void)
@@ -34,7 +60,15 @@ void shell(void)
 
     memset(in_order,0,256);
     
-    
+    /*
+    char ch;
+    if((ch=getchar())==65)
+    {
+        printf("上键\n");
+        return ;
+    }
+    */
+
     fgets(in_order,sizeof(in_order),stdin);  //输入命令
     
 
@@ -43,7 +77,8 @@ void shell(void)
         return ;
     }
     
- //   if(strcmp(in_order,"^[[A")==0)
+    
+   // if(strcmp(in_order,"^[[A")==0)
    //     printf("\b")
 
 
@@ -53,7 +88,7 @@ void shell(void)
     int historyfd;
     in_order[len_order-1]='+';         
 
-    historyfd=open("/home/motian/linuxC/fork/h",O_CREAT|O_WRONLY|O_APPEND,0666);                      
+    historyfd=open("/home/motian/linuxC/fork/.myshellhistory",O_CREAT|O_WRONLY|O_APPEND,0666);                      
     write(historyfd,in_order,len_order);                 //为什么历史命令加不了
     close(historyfd);
     
@@ -134,8 +169,14 @@ void shell(void)
         i++;
     }
     
+    if(!strcmp(par_order[0],"history"))
+    {
+        history();
+        return ;
+    }
     if(!strcmp(par_order[0],"exit") || !strcmp(par_order[0],"logout"))
     {
+        printf("再见!!!\n");
         exit(0);
     }
     
@@ -176,7 +217,7 @@ void shell(void)
     //检查命令
     {
         
-        char *path[]={"/usr/bin","/bin",NULL};
+        char *path[]={"/home/motian/linuxC/fork","/usr/bin","/bin",NULL};
         int g=0,flag=0;
         DIR* dp;
         struct dirent* dirp;
@@ -198,6 +239,7 @@ void shell(void)
         if(!flag)           
         {
             printf("没有此命令\n");
+
         }
     }
 

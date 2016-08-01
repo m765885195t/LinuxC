@@ -23,7 +23,7 @@ int main()
     for(i=0;i<5;i++)
     {
         counter++;
-        sleep(1);
+        sleep(2);
     }
 
     pthread_join(t1,NULL);

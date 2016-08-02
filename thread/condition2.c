@@ -8,7 +8,8 @@
 #include<stdio.h>
 #include<pthread.h>
 #include<stdlib.h>
-                        //警告的原因
+#include<unistd.h>
+
 pthread_mutex_t mutex;
 pthread_cond_t cond;
 

@@ -17,7 +17,7 @@
 
 
 //自定义的错误处理函数
-void my_error(const char *err_string, int line)
+void my_err(const char *err_string, int line)
 {
     fprintf(stderr,"ine:%d ",line);
     perror(err_string);
@@ -36,7 +36,7 @@ int my_recv(int conn_fd, char *data_buf,int len)
     //如果自定义的缓冲区中没有数据，则从套接字中读取数据
     if((len_remain = recv(conn_fd, recv_buf, sizeof(recv_buf),0)) < 0)
     {
-        my_error("recv",__LINE__);
+        my_err("recv",__LINE__);
     }
     else if(len_remain==0)  //目的计算机的socket关闭
     {

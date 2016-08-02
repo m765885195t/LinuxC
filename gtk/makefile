@@ -1,7 +1,18 @@
-gtkwin:gtkwin.o
-	gcc gtkwin.o -o gtkwin.c `pkg-config --libs --cflags gtk+-2.0`
-gtkwin.o:gtkwin.c gtk/gtk.h
-	gcc -c gtkwin.c `pkg-config --libs --cfags gtk+-2.0`
+cc=gcc
+
+program=gtkwin
+
+#PATH += /usr/include/gtk2.0
+LDLIBS=`pkg-config --libs gtk+-2.0`
+
+CFLAGS= -Wall -g `pkg-config --cflags gtk+-2.0`
+
+$(program):$(program).c
+$(cc) $(LDLIBS) $(program).o -o $(program)
+
+
+$(program).o:$(program).c
+$(cc) $(CFLAGS) -c $(program).c
+
 clean:
-	rm -rf *.o gtkwin.o
-#怎么编写
+	-rm -f *.o

@@ -97,7 +97,7 @@ int main(int argc,char *argv[])
     serv_addr.sin_family = AF_INET;
     for(i=0;i<argc;i++)
     {
-        if(strcmp("-p",argv[1]) == 0)
+        if(strcmp("-p",argv[i]) == 0)
         {
             serv_port = atoi(argv[i+1]);
             if((serv_port < 0) || (serv_port > 65535))
@@ -154,7 +154,13 @@ int main(int argc,char *argv[])
     }
     printf("\n");
 
+    while(1)
+    {
+        printf("1\n");
+        sleep(1);
+    }
     close(conn_fd);
+
 
     return 0;
 }

@@ -18,9 +18,9 @@
 int main()
 {
     int sock_fd,new_fd;  //套接字描述符
-    int sin_size;
+    int sin_size,numbytes;
     struct sockaddr_in my_addr,their_addr; //套接字地址
-    char buff[128];
+    char buf[128];
 
     sock_fd = socket(AF_INET,SOCK_STREAM,0);  //建立TCP接口
 
@@ -45,26 +45,29 @@ int main()
 
         //如果建立连接，则产生一个全新的套接字
         new_fd=accept(sock_fd,(struct sockaddr *)&their_addr,&sin_size);
-
+        printf("新的连接上线了 ip:%s\n",inet_ntoa(their_addr.sin_addr));
         //子进程完成回话，父进程监听
         if(!fork())
         {
-            //读取客户端发来的信息
-
-            recv(new_fd,buff,strlen(buff),0);
-
-            printf("%s\n",buff);//打印
-
-            //将发来的消息发回去
-            send(new_fd,buff,strlen(buff),0);
-
+            char a[128];
+            while(1)
+            {
+                //读取客户端发来的信息
+                numbytes=recv(new_fd,buf,sizeof(buf),0);
+                buf[numbytes]='\0';
+                printf("客户端:%s\n",buf);//打印
+        
+                //发消息给客户端
+                printf("服务器:");
+                fgets(a,128,stdin);
+                a[strlen(a)-1]='\0';
+                send(new_fd,a,strlen(a),0);
+            }
             close(new_fd);
             exit(0);
         }
-
+    
         close(new_fd);
-
-
     }
 
     close(sock_fd);

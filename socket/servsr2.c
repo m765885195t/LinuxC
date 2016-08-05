@@ -13,6 +13,10 @@
 #include<pthread.h>
 #include<netinet/in.h>
 #include<arpa/inet.h>
+#include<stdlib.h>
+
+
+#define WELCOME "|------欢迎来到聊天室------|\n"
 
 struct user_info{             //用户信息
     char ID[6];
@@ -31,46 +35,58 @@ struct data_info{       //消息结构体
 
 }buf;
 
+struct huihua{
+    int l_fd;
+    int r_fd;
+};
+
 struct user_info *  find(int user_fd) //查找用户信息
 {
-    for(i=0;i<30;i++)
+    for(int i=0;i<30;i++)
     {
-        if(USER[i].ID == user_fd)
+        if(USER[i].I_fd == user_fd)
         {
-            return USER[i];
+            return &USER[i];
         }
     }
     return NULL;
 }
 
-int len_data = sizeof(struct data_info);
+int len_info = sizeof(struct data_info);
+int len_user = sizeof(struct user_info);
 //清空信息组(全置为0)
 
 
 
+void *conversation(void *fd);
+void login(int user_fd);
+void zhuce(int user_fd);
+void MAIN(int user_fd);
+void chat(int user_fd);
+void *noc(void *a);
 
 
 int main()   //主函数
 {
     int sock_fd,user_fd; //套接字描述符
     struct sockaddr_in serv_addr,cli_addr;//服务器与登陆用户地址
-    int addr_len = sizeof(struct sockaddr_in);
+    int len_addr = sizeof(struct sockaddr_in);
 
     //建立套接字
-    if((sock_fd = socket(AF_INIT,SOCK_STRAM)) < 0)  //建立
+    if((sock_fd = socket(AF_INET,SOCK_STREAM,0)) < 0)  //建立
     {
         perror("socket");
     }
     
     //设置属性
     int optval = 1;
-    if(setsockopt(sock_fd,SOL_SOCKET,_SO_REUSEADDR,(void *)&optval,sizeof(int)) < 0)
+    if(setsockopt(sock_fd,SOL_SOCKET,SO_REUSEADDR,(void *)&optval,sizeof(int)) < 0)
     {
         perror("setsockopt");
     }
 
     //初始化地址结构
-    serv_addr.sin_family = AF_INIT;
+    serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(4567);
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(serv_addr.sin_zero,0,len_addr);
@@ -87,7 +103,7 @@ int main()   //主函数
         perror("listen");
     }
 
-    printf("等待中.....");
+    printf("等待中.....\n");
 
     while(1)
     {
@@ -105,20 +121,22 @@ int main()   //主函数
 
         //处理会话
         pthread_t p_t;
-        pthread_create(&p_t,NULL,conversation, ||user_fd||);
+        pthread_create(&p_t,NULL,conversation,(void *)&user_fd);
         
     }
 }
 
-void conversation(int user_fd) //登录主界面
+void *conversation(void *fd) //登录主界面
 {
     struct data_info buf;
+    int user_fd;
+    user_fd = *((int *)fd);
 
     memset(&buf,0,len_info);
     strcpy(buf.content,"1:用户登录\n2:用户注册");
-    buf.chat=0;
 
-    send(user_fd,&buf,len_data,0);
+
+    send(user_fd,&buf,len_info,0);
     
     while(1)
     {
@@ -127,12 +145,12 @@ void conversation(int user_fd) //登录主界面
 
         if(strcmp(buf.content,"1") == 0)
         {
-            login();
+            login(user_fd);
             break;
         }
         if(strcmp(buf.content,"2") == 0)
         {
-            zhuce();
+            zhuce(user_fd);
             break;
         }
         memset(&buf,0,len_info);
@@ -147,9 +165,9 @@ void login(int user_fd)   //登录函数
     char userID[32];
     char password[32];
     char a[]="用户跟密码不匹配!!!";
-    int len,flag = 1;
+    int len,flag = 1,i;
 
-    memset(&buf,0,len_buf);
+    memset(&buf,0,len_info);
     strcpy(buf.content,"---登录---\n");
     send(user_fd,&buf,len_info,0);
 
@@ -200,9 +218,9 @@ void zhuce(int user_fd)  //注册函数
     char username[32];
     char password[32];
     char password2[32];
+    int i;
 
-
-    memset(&buf,0,len_buf);
+    memset(&buf,0,len_info);
     strcpy(buf.content,"---注册---\n");
     send(user_fd,&buf,len_info,0);
     
@@ -235,7 +253,7 @@ void zhuce(int user_fd)  //注册函数
         }
         else
         {
-            mdemset(&buf,0,len_info);
+            memset(&buf,0,len_info);
             strcpy(buf.content,"两次密码不一致请重新输入\n");
             send(user_fd,&buf,len_info,0);
         }
@@ -285,7 +303,8 @@ void chat(int user_fd)
 {
     struct data_info buf;
     struct user_info *user;
-
+    struct huihua fd;
+    int i;
     user = find(user_fd);
 
     memset(&buf,0,len_info);
@@ -304,7 +323,7 @@ void chat(int user_fd)
 
         for(i=0;i<30;i++)
         {
-            if(strcmp(USER[i],buf.content) == 0)
+            if(strcmp(USER[i].name,buf.content) == 0)
             {
                 if(USER[i].state == 1)
                 {
@@ -315,15 +334,26 @@ void chat(int user_fd)
 
                     memset(&buf,0,256);
                     strcpy(buf.content,user->name);
-                    strcat(buf.content,"请求连接");
-                    send(USER[i].I_fd,);
+                    strcat(buf.content,":请求连接");
+                    send(USER[i].I_fd,&buf,len_info,0);
 
                     memset(&buf,0,256);
                     send(user_fd,&buf,len_info,0);
                     recv(user_fd,&buf,len_info,0);
                     
-                    if(strcpy())
-                    
+                    if(strcpy(buf.content,"yes") == 0)
+                    {
+                        memset(&buf,0,256);
+                        strcpy(buf.content,"聊天开始\n");
+                        recv(user_fd,&buf,len_info,0);
+                        recv(USER[i].I_fd,&buf,len_info,0);
+
+                        fd.l_fd=user_fd;
+                        fd.r_fd=USER[i].I_fd;
+                        pthread_t t;
+                        pthread_create(&t,NULL,noc,(void *)&fd);
+                        break;
+                    }       
                 }
                 else
                 {
@@ -336,11 +366,43 @@ void chat(int user_fd)
             }
         }
 
-
-    while(1)
-    {
-        
-    
-
     }
 }
+
+void *noc(void *a)
+{
+    struct huihua *fd=a;
+    pid_t pid;
+    pid = fork();
+    while(1)
+    {
+        if(pid > 0)
+        {
+            memset(&buf,0,256);
+            recv(fd->l_fd,&buf,len_info,0);
+            if(strcmp(buf.content,"tuichu") == 0)
+            {
+                memset(&buf,0,256);
+                strcpy(buf.content,"tuichu");
+                send(fd->l_fd,&buf,len_info,0);
+                return (0);
+            }
+            send(fd->r_fd,&buf,len_info,0);
+        }   
+        if(pid == 0)
+        {
+            memset(&buf,0,256);
+            recv(fd->r_fd,&buf,len_info,0);
+            if(strcmp(buf.content,"tuichu") == 0)
+            {
+                memset(&buf,0,256);
+                strcpy(buf.content,"tuichu");
+                send(fd->l_fd,&buf,len_info,0);
+                exit(0);
+            }
+            send(fd->l_fd,&buf,len_info,0);
+        }
+    }
+}
+
+

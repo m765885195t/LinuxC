@@ -29,9 +29,14 @@ struct user_info{             //用户信息
 
 struct data_info{       //消息结构体
     char I_name_ID[32];//发送人的名字或ID
+    int I_fd;
     char Y_name_ID[32];//接受人的名字或ID
+    int Y_fd;
     char content[256];//消息主体
     int state;            //1在线　0离线  2隐身  3聊天　4传文件 
+    int lianjie;   //连接状态
+    int denglu;    //登录状态
+
 
 }buf;
 
@@ -42,7 +47,7 @@ struct huihua{
 
 struct user_info *  find(int user_fd) //查找用户信息
 {
-    for(int i=0;i<30;i++)
+    for(int i=1;i<30;i++)
     {
         if(USER[i].I_fd == user_fd)
         {
@@ -54,7 +59,6 @@ struct user_info *  find(int user_fd) //查找用户信息
 
 int len_info = sizeof(struct data_info);
 int len_user = sizeof(struct user_info);
-//清空信息组(全置为0)
 
 
 
@@ -68,6 +72,7 @@ void *noc(void *a);
 
 int main()   //主函数
 {
+    memset(USER,0,30*(len_user));
     int sock_fd,user_fd; //套接字描述符
     struct sockaddr_in serv_addr,cli_addr;//服务器与登陆用户地址
     int len_addr = sizeof(struct sockaddr_in);
@@ -117,7 +122,9 @@ int main()   //主函数
         printf("新的连接上线了 ip: %s\n",inet_ntoa(cli_addr.sin_addr));
 
         //发送问候
-        send(user_fd,WELCOME,strlen(WELCOME),0);
+        memset(&buf,0,len_info);
+        strcpy(buf.content,WELCOME);
+        send(user_fd,&buf,len_info,0);
 
         //处理会话
         pthread_t p_t;
@@ -135,13 +142,15 @@ void *conversation(void *fd) //登录主界面
     memset(&buf,0,len_info);
     strcpy(buf.content,"1:用户登录\n2:用户注册");
 
-
     send(user_fd,&buf,len_info,0);
     
     while(1)
     {
         memset(&buf,0,len_info);
         recv(user_fd,&buf,len_info,0);
+        {
+
+        }
 
         if(strcmp(buf.content,"1") == 0)
         {
@@ -154,7 +163,7 @@ void *conversation(void *fd) //登录主界面
             break;
         }
         memset(&buf,0,len_info);
-        strcpy(buf.content,"你的选择有误,请重新输入");
+        strcpy(buf.content,"你的选择有误,请重新输入!");
         send(user_fd,&buf,len_info,0);
     }
 }
@@ -164,8 +173,7 @@ void login(int user_fd)   //登录函数
     struct data_info buf;
     char userID[32];
     char password[32];
-    char a[]="用户跟密码不匹配!!!";
-    int len,flag = 1,i;
+    int len,flag = 0,i;
 
     memset(&buf,0,len_info);
     strcpy(buf.content,"---登录---\n");
@@ -178,16 +186,19 @@ void login(int user_fd)   //登录函数
         send(user_fd,&buf,len_info,0);
         memset(&buf,0,len_info);                   //输入账号
         recv(user_fd,&buf,len_info,0);
-        strcpy(buf.content,userID);
+        strcpy(userID,buf.content);
+
+        
 
         memset(&buf,0,len_info);
         strcpy(buf.content,"password:");
         send(user_fd,&buf,len_info,0);
         memset(&buf,0,len_info);               //输入密码
         recv(user_fd,&buf,len_info,0);
-        strcpy(buf.content,password);   
+        strcpy(password,buf.content);   
     
-        for(i=0;i<30;i++)
+    
+        for(i=1;i<30;i++)
         {
             if(strcmp(userID,USER[i].name) == 0 || strcmp(userID,USER[i].ID))
             {
@@ -201,12 +212,20 @@ void login(int user_fd)   //登录函数
         if(flag)
         {
             USER[i].I_fd = user_fd;//为登录用户分配套接字
+            USER[i].state = 1;
+            memset(&buf,0,len_info);
+            buf.denglu=1;
+            send(USER[i].I_fd,&buf,len_info,0);//登陆成功的标识
+
+            printf("%d  %d\n",USER[i].state,i);
             MAIN(USER[i].I_fd);
+            break;
         }
         else
         {
+            printf("%s\n","no");
             memset(&buf,0,len_info);
-            strcpy(buf.content,"用户跟密码不匹配!!!");
+            strcpy(buf.content,"用户跟密码不匹配!!!\n");
             send(user_fd,&buf,len_info,0);
         }
     }
@@ -221,7 +240,7 @@ void zhuce(int user_fd)  //注册函数
     int i;
 
     memset(&buf,0,len_info);
-    strcpy(buf.content,"---注册---\n");
+    strcpy(buf.content,"---注册---");
     send(user_fd,&buf,len_info,0);
     
     while(1)
@@ -231,22 +250,29 @@ void zhuce(int user_fd)  //注册函数
         send(user_fd,&buf,len_info,0);
         memset(&buf,0,len_info);                   //输入账号
         recv(user_fd,&buf,len_info,0);
-        strcpy(buf.content,username);
+        strcpy(username,buf.content);
+            
+    
+
 
         memset(&buf,0,len_info);
         strcpy(buf.content,"请输入你的密码:");
         send(user_fd,&buf,len_info,0);
         memset(&buf,0,len_info);               //输入密码
         recv(user_fd,&buf,len_info,0);
-        strcpy(buf.content,password);   
+        strcpy(password,buf.content);   
         
+
         memset(&buf,0,len_info);
-        strcpy(buf.content,"请再次确认密码");
+        strcpy(buf.content,"请再次确认密码:");
         send(user_fd,&buf,len_info,0);
         memset(&buf,0,len_info);               //确认密码
         recv(user_fd,&buf,len_info,0);
-        strcpy(buf.content,password2);   
+        strcpy(password2,buf.content);   
         
+
+
+
         if(strcmp(password,password2) == 0)
         {
             break;
@@ -259,7 +285,7 @@ void zhuce(int user_fd)  //注册函数
         }
     }
 
-    for(i=0;i<30;i++)
+    for(i=1;i<30;i++)
     {
         if(USER[i].man == 0)
         {
@@ -268,7 +294,7 @@ void zhuce(int user_fd)  //注册函数
             USER[i].I_fd = user_fd;
             USER[i].man = 1;
 
-            login(user_fd);
+            login(USER[i].I_fd);
             break;
         }
     }
@@ -321,10 +347,12 @@ void chat(int user_fd)
         memset(&buf,0,len_info);
         recv(user_fd,&buf,len_info,0);
 
-        for(i=0;i<30;i++)
+        for(i=1;i<30;i++)
         {
             if(strcmp(USER[i].name,buf.content) == 0)
             {
+                printf("%s\n","找到");
+                printf("%d  %d\n",USER[i].state,i);
                 if(USER[i].state == 1)
                 {
                     memset(&buf,0,256);
@@ -332,19 +360,23 @@ void chat(int user_fd)
                     send(user_fd,&buf,len_info,0);
 
 
-                    memset(&buf,0,256);
+                    memset(&buf,0,len_info);
                     strcpy(buf.content,user->name);
                     strcat(buf.content,":请求连接");
+                    strcpy(buf.Y_name_ID,user->name);
+                    buf.Y_fd = user_fd;
+
                     send(USER[i].I_fd,&buf,len_info,0);
 
-                    memset(&buf,0,256);
-                    send(user_fd,&buf,len_info,0);
-                    recv(user_fd,&buf,len_info,0);
+                    memset(&buf,0,len_info);
+                    recv(USER[i].I_fd,&buf,len_info,0);
+
+                    printf("%s\n",buf.content);
                     
-                    if(strcpy(buf.content,"yes") == 0)
+                    if(strcmp(buf.content,"yes") == 0)
                     {
-                        memset(&buf,0,256);
-                        strcpy(buf.content,"聊天开始\n");
+                        memset(&buf,0,len_info);
+                        strcpy(buf.content,"聊天开始");
                         recv(user_fd,&buf,len_info,0);
                         recv(USER[i].I_fd,&buf,len_info,0);
 
@@ -357,7 +389,7 @@ void chat(int user_fd)
                 }
                 else
                 {
-                    memset(&buf,0,256);
+                    memset(&buf,0,len_info);
                     strcpy(buf.content,"对方离线中....");
                     send(user_fd,&buf,len_info,0);
                     break;

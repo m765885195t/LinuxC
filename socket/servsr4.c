@@ -33,10 +33,10 @@ struct data_info{       //私聊消息结构体
     char Y_name[32];
 //    long Y_ID;      
     char message[256];
-    int pro;//1注册2登录3请求4聊天5群聊6修改状态
+    int pro;//1注册2登录3请求4聊天5群聊6修改状态7好友在线表
 };
 
-struct ql_info{              //群聊消息结构体
+struct ql_info{              //群聊信息结构体
     int fd;
     char message[256];
     char I_name[32];
@@ -47,7 +47,6 @@ struct ql_info{              //群聊消息结构体
 
 
 int len_data = sizeof(struct data_info);
-
 
 
 
@@ -62,6 +61,18 @@ struct user_info * find(char *username)
         }
     }
 
+    return NULL;
+}
+//通过成员名查找群成员
+struct ql_info * find2(char *name)
+{
+    for(int i=1;i<50;i++)
+    {
+        if(strcmp(cy[i].I_name,name) == 0)
+        {
+            return &cy[i];
+        }
+    }
     return NULL;
 }
 
@@ -161,6 +172,7 @@ void * session(void *a)
                 memset(sen.message,256,0);
                 strcpy(sen.message,"1");
                 send(fd,&sen,len_data,0);
+                printf("%s上线了\n",USER[i].username);
             }
         }
         if(rec.pro == 3)
@@ -191,8 +203,7 @@ void * session(void *a)
         { 
             puts("私聊中");
             USERp = find(rec.Y_name);
-            sen.pro = 4;
-    
+            
             strcpy(sen.message,rec.message);
             strcpy(sen.Y_name,rec.Y_name);//转发消息
             strcpy(sen.I_name,rec.I_name);
@@ -203,7 +214,7 @@ void * session(void *a)
             char s[2];
             int flag = 0;
             puts("群聊中");
-            for(i=0;i<50;i++)
+            for(i=1;i<50;i++)
             {
                 if(cy[i].man == 1)
                 {
@@ -215,6 +226,7 @@ void * session(void *a)
                 }
                 else
                 {
+                    memset(cy[i].I_name,0,32);
                     strcpy(cy[i].I_name,rec.I_name);
                     cy[i].fd = fd;
                     cy[i].man = 1;
@@ -233,8 +245,16 @@ void * session(void *a)
             }
             else
             {
-                strcpy(sen.message,rec.message);
-                strcpy(sen.I_name,rec.I_name);
+                if(strcmp(rec.message,"MT\n") == 0)
+                {
+                    sprintf(sen.message,"%s",rec.I_name,"退出了群组,","群聊人数共",i,"人");
+                    cy
+                }
+                else
+                {
+                    strcpy(sen.message,rec.message);
+                    strcpy(sen.I_name,rec.I_name);
+                }
             }
             for(i=0;i<50;i++)
             {
@@ -256,17 +276,53 @@ void * session(void *a)
         }
         if(rec.pro == 6)
         {
+            puts("状态");
             USERp = find(rec.I_name);
-            int i;
+            int t;
             
             if(strcmp(rec.message,"MT") == 0)
             {
                 USERp->state = 0;
+                printf("%s下线了\n",USERp->username);
+                return NULL;
             }
-            if((strcmp(rec.message,"2") == 0) || (strcmp(rec.message,"3") == 0))
+            if((strcmp(rec.message,"1") == 0) || (strcmp(rec.message,"2") == 0))
             {
-                i = atoi(rec.message);
-                USERp->state = i;
+                t = atoi(rec.message);
+                USERp->state = t;
+            }
+            if(strcmp(rec.message,"ZT") == 0)
+            {
+                if(USERp->state == 2)
+                {
+                    memset(sen.message,0,256);
+                    strcpy(sen.message,"隐身中...");
+                }
+                if(USERp->state == 1)
+                {
+                    memset(sen.message,0,256);
+                    strcpy(sen.message,"在线中...");
+                }
+                send(fd,&sen,len_data,0);
+            }
+            if(strcmp(rec.message,"ZX") == 0)
+            {
+                USERp->state = 0;
+            }
+        }
+        if(rec.pro == 7)
+        {
+            char s[3];
+            for(i=1;i<50;i++)
+            {
+                if(USER[i].state == 1)
+                {
+                    sprintf(s,"%d",i);
+                    s[strlen(s)]='\0';
+                    memset(sen.message,0,256);
+                    sprintf(sen.message,"%s%s%s",s," >     ",USER[i].username);
+                    send(fd,&sen,len_data,0);
+                }
             }
         }
     }

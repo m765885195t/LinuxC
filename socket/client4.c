@@ -14,6 +14,9 @@
 #include<arpa/inet.h>
 #include<netinet/in.h>
 #include<sys/socket.h>
+#include<time.h>
+#include<fcntl.h>
+#include<sys/stat.h>
 
 struct user_info{
     long ID;
@@ -27,6 +30,7 @@ struct data_info{
     char Y_name[32];
 //    long Y_ID;
     char message[256];
+    char time[20];
     int pro; //1注册2登录3请求聊天4聊天5群聊6状态
 }rec,sen;
 
@@ -53,7 +57,8 @@ int qls(void);
 void qz(void);
 void smq(void);
 void zt(void);
-
+void jianyi(void);
+void tm(char a[]);
 
 
 int main()
@@ -65,6 +70,7 @@ int main()
     ser_addr.sin_family = AF_INET;
     ser_addr.sin_port = htons(4567);
     inet_aton("192.168.30.192",&ser_addr.sin_addr);
+    //inet_aton("127.0.0.1",&ser_addr.sin_addr);
 
     fd = socket(AF_INET,SOCK_STREAM,0);
 
@@ -91,20 +97,35 @@ void *session(void *a)
     {
         recv(fd,&rec,len_data,0);
 
-        if((sen.pro == 4) || (sen.pro == 5))//聊天退不出去
+        if(rec.pro == 4)
         {
-            if(strcmp(rec.message,"MT\n") != 0)
-            {   
-                printf("%s >>> %s",rec.I_name,rec.message);
-            } 
-            else
+            char buf[128];
+            FILE *fp;
+            sprintf(buf,"%s%s%s%s",".MT",rec.Y_name,"|",rec.I_name);
+            fp = fopen(buf,"a");
+            fwrite(&rec,len_data,1,fp);
+            fclose(fp);
+            
+            if(sen.pro == 4)
             {
-                printf("对方退出了聊天\n");
-            }
+                if(strcmp(rec.message,"MT") != 0)
+                {   
+                    printf("%s >>> %-30s%s\n",rec.I_name,rec.message,rec.time);
+                } 
+                else
+                {
+                    printf("对方退出了聊天\n");
+                }
+
+            }       
+        }
+        if(sen.pro == 5)
+        {   
+           printf("%s >>> %-30s%s\n",rec.I_name,rec.message,rec.time);
         }
         if(sen.pro == 6)
         {
-            printf("当前状态为:%s\n",rec.message);
+            printf("当前状态为:%s\n\n",rec.message);
         }
         if(sen.pro == 7)
         {
@@ -126,9 +147,10 @@ void MAIN(void)
         printf("---------------\n");
         printf("1----登录------\n");
         printf("2----注册------\n");
-        printf("3--忘记密码----\n");
+        printf("3---忘记密码----\n");
         printf("4----使用说明-----\n");
-        printf("5----退出------\n");
+        printf("5---建议反馈-----\n");
+        printf("6----退出------\n");
         printf("---------------\n");
         printf("请输入你的选择:\n");
         
@@ -156,9 +178,17 @@ void MAIN(void)
         }
         else if(buf[0] == '4')
         {
-            //打开MT
+            system("clear");
+            system("cat MT");
+            printf("\n按任意键返回...\n");
+            getchar();
+
         }
         else if(buf[0] == '5')
+        {
+            jianyi();
+        }
+        else if(buf[0] == '6')
         {
             sen.pro = 6;
             strcpy(sen.message,"MT");
@@ -168,11 +198,59 @@ void MAIN(void)
     }
 }
 
+void tm(char a[])
+{
+    time_t nowtime;
+    struct tm* timeinfo;
+    time(&nowtime);
+
+    timeinfo = localtime(&nowtime);
+
+    strncpy(a,asctime(timeinfo),19);
+    a[19] = '\0';
+}
+
+void jianyi(void)
+{
+    char buf[256];
+    while(1)
+    {
+        sen.pro = 10;
+        system("clear");
+        printf("1----建议------\n");
+        printf("2----返回主界面------\n\n");
+        
+        printf("请输入你的选择:");
+        memset(buf,0,256);
+        fgets(buf,256,stdin);
+        if(strlen(buf) > 2)
+        {
+            continue;
+        }
+        if(buf[0] == '1')
+        {
+            printf("建议:");
+            memset(sen.message,0,256);
+            fgets(sen.message,256,stdin);
+            sen.message[strlen(sen.message)-1] = '\0';
+            send(fd,&sen,len_data,0);
+            printf("\n\n提交中.....\n");
+            sleep(1);
+            printf("感谢你的建议\n");
+            break;
+        }
+        else if(buf[0] == '2')
+        {
+            break;
+        }
+    }
+}
+
 void denglu(void)
 {
     for(int i=0;i<3;i++)
     {
-        sen.pro = 0;//清空消息标志
+        sen.pro = 0;
         system("clear");
         printf("---------MT登录----------\n\n");
         
@@ -220,17 +298,16 @@ void zhuce(void)
     char username[32];
     char password[32];
     char password2[32];
-    int id;
+    int id,i;
+    sen.pro = 1;
 
-    while(1)
+    for(i=0;i<3;i++)
     {
         sen.pro = 1;
         system("clear");
         printf("--------------注册--------\n\n");
-    //    printf("您的MT号为:%ld\n",id = get_ID());
-    //    printf("此号具有全球唯一性,请放心使用\n");
-
-
+        //    printf("您的MT号为:%ld\n",id = get_ID());
+        //    printf("此号具有全球唯一性,请放心使用\n");
 
         printf("用户名:");
         memset(username,32,0);
@@ -252,9 +329,9 @@ void zhuce(void)
         {
             continue;
         }
-        
+    
         printf("\n");
-        printf("确认密码:");
+    printf("确认密码:");
         system("stty -echo");
         memset(password2,32,0);
         fgets(password2,32,stdin);
@@ -264,20 +341,35 @@ void zhuce(void)
         {
             continue;
         }
-
-
         if(strcmp(password,password2) == 0)
-        {     
+        {    
             strcpy(sen.I_name,username);
             strcpy(sen.Y_name,password);
             sen.pro = 1;
            // rec.I_ID = id;
-        
             send(fd,&sen,len_data,0);
+            sleep(1);
+        }
+        else 
+        {
+            printf("两次密码输入不一致...\n");
+            sleep(1);
+            continue;
+        }
+        if(strcmp(rec.message,"1") == 0)
+        {
+            printf("\n注册成功...\n");
+            sleep(1);
             break;
+        }
+        if(strcmp(rec.message,"0") == 0)
+        {
+            printf("\n用户名重名.\n");
+            sleep(1);
         }
     }
 }
+
 
 long get_ID(void)
 {
@@ -354,14 +446,12 @@ void zt(void)
         sen.pro = 6;
         system("clear");
         printf("-------状态-------\n\n");
-        
-        printf("获取当前状态中.....\n");
        
-        sleep(1);
+        
         memset(sen.message,0,256);
         strcpy(sen.message,"ZT");
         send(fd,&sen,len_data,0);
-         
+        sleep(1);
 
         printf("\n请选择你要修改的状态:\n");
 
@@ -397,13 +487,6 @@ void zt(void)
     }
 }
 
-
-void zx(void) //获取在线用户列表
-{
-
-    return ;
-}
-
 void sl(void)
 {
     char buf[256];
@@ -414,10 +497,11 @@ void sl(void)
         printf("-------好友在线列表-------\n\n");
         
         sen.pro = 7;
-        sleep(1);
+    
         memset(sen.message,0,256);
         send(fd,&sen,len_data,0);
-        
+    
+        sleep(1);
         sen.pro = 2;
         printf("\n1------选择好友-------\n");
         printf("2-----返回上一层------\n");
@@ -439,7 +523,13 @@ void sl(void)
             memset(name,0,256);
             fgets(name,256,stdin);
             name[strlen(name)-1] = '\0';
-            
+            if(strcmp(USER.username,name) == 0)
+            {
+                printf("好友对象不能为自己\n");
+                sleep(1);
+                continue;
+            }
+
             hy(name);
         }
         else if(buf[0] == '2')
@@ -473,7 +563,7 @@ void hy(char name[])
         system("clear");
         printf("--------------------\n");
         printf("1-----与他(她)聊天---------\n");
-        printf("2-----查看聊天记录-----\n");
+        printf("2-----聊天记录(含未读消息)-----\n");
         printf("3------返回上一层-----\n");
         printf("4-------注销--------\n");
         printf("5------退出--------\n");
@@ -495,7 +585,19 @@ void hy(char name[])
         }
         else if(buf[0] == '2')
         {
-            //打开文件名字叫name和username
+            system("clear");
+            printf("--------聊天记录--------\n\n");
+            FILE *fp;
+            char buf[128];
+            struct data_info buff;
+            sprintf(buf,"%s%s%s%s",".MT",USER.username,"|",name);
+            fp = fopen(buf,"r");
+            while(fread(&buff,len_data,1,fp) > 0)
+            {
+                printf("%s >>> %-30s%s\n",buff.I_name,buff.message,buff.time);
+            }
+            printf("\n\n请按任意键返回...\n");
+            getchar();
         }
         else if(buf[0] == '3')
         {
@@ -521,6 +623,7 @@ void hy(char name[])
 
 void lt(char name[])
 {
+    char *p;
     memset(sen.message,0,256);
     strcpy(sen.Y_name,name);
     send(fd,&sen,len_data,0);
@@ -534,18 +637,26 @@ void lt(char name[])
         printf("......聊天中......\n\n");
         flag = 0;
         sen.pro = 4;
+        FILE *fp;
+        char buf[128];
+        sprintf(buf,"%s%s%s%s",".MT",sen.I_name,"|",sen.Y_name);
         while(1)
         {   
             memset(sen.message,0,256);
+            tm(sen.time);
+    
             fgets(sen.message,256,stdin);
-            sen.message[strlen(sen.message)-1] == '\0';          
+            sen.message[strlen(sen.message)-1] = '\0';          
             send(fd,&sen,len_data,0);
-            if(strcmp(sen.message,"MT\n") == 0)
+            if(strcmp(sen.message,"MT") == 0)
             {
                 break;
             }
+                
+            fp = fopen(buf,"a+");
+            fwrite(&sen,len_data,1,fp);
+            fclose(fp);
         }
-        flag = 0;
     }
     else
     {
@@ -566,6 +677,7 @@ void ql(void)
         printf("---群聊----\n\n");
         printf("-------------------\n");
         printf("1------加入群组-------\n");
+        printf("2-----查看群聊天记录-----\n");
       //  printf("-----加入私密群----\n");
      //   printf("---------创建私密群----\n")
         printf("3------返回上一层-------\n");
@@ -586,7 +698,17 @@ void ql(void)
         }
         else if(buf[0] == '2')
         {
-            smq();
+            system("clear");
+            printf("--------群聊天记录--------\n\n");
+            FILE *fp;
+            struct data_info buff;
+            fp = fopen(".MTqunzu","r");
+            while(fread(&buff,len_data,1,fp) > 0)
+            {
+                printf("%s >>> %-30s%s\n",buff.I_name,buff.message,buff.time);
+            }
+            printf("\n\n请按任意键返回...\n");
+            getchar();
         }
         else if(buf[0] == '3')
         {
@@ -621,16 +743,17 @@ void qz(void)
     sen.pro = 5;
     printf("正在加入.......\n");
     sleep(1);
+    system("clear");
     send(fd,&sen,len_data,0);
     printf("\n--------群聊中-------\n");
     while(1)
     {     
         memset(sen.message,0,256);
         fgets(sen.message,256,stdin);
-        sen.message[strlen(sen.message)-1] == '\0';  
+        sen.message[strlen(sen.message)-1] = '\0';  
         send(fd,&sen,len_data,0);
 
-        if(strcmp(sen.message,"MT\n") == 0)
+        if(strcmp(sen.message,"MT") == 0)
         {
             break;
         }

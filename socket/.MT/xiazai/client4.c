@@ -31,7 +31,7 @@ struct data_info{
 //    long Y_ID;
     char message[256];
     char time[20];
-    int pro; //1注册2登录3请求聊天4聊天5群聊6状态7好友在线列表8改密9上传文件10下载文件11下载文件列表12升级会员13加入私密群   15私密群消息
+    int pro; //1注册2登录3请求聊天4聊天5群聊6状态7好友在线列表8改密9上传文件10下载文件11下载文件列表12升级会员
 }rec,sen;
 
 int fd;
@@ -64,10 +64,7 @@ void gm(void);
 void ftp(void);
 void ftps(void);
 void ftpx(void);
-void vip(void);
-void csmq(void);
-void jsmq(void);
-void smqz(void);
+void vip();
 
 int main()
 {
@@ -133,6 +130,7 @@ void *session(void *a)
         }
         if(sen.pro == 5)
         {   
+        
             FILE *fp;
             char buf[50];
             sprintf(buf,"%s%s",".MTqunzu",USER.username);
@@ -162,23 +160,15 @@ void *session(void *a)
                 }
                 else
                 {
-                    fwrite(rec.message,2,1,fp);
+                    fwrite(rec.message,1,1,fp);
                     fclose(fp);
                 }
             }
 
         }
-        if((sen.pro == 11) || (sen.pro == 14))
+        if(sen.pro == 11)
         {
             printf("%s\n",rec.message);
-        }
-        if(sen.pro == 13)
-        {   
-            FILE *fp;
-            fp = fopen("./MT/smq","a");
-            fwrite(&rec,len_data,1,fp);
-            fclose(fp);
-           printf("%s >>> %-30s%s\n",rec.I_name,rec.message,rec.time);
         }
 
     }
@@ -192,7 +182,7 @@ void MAIN(void)
     {
         sen.pro = 0;
         system("clear");
-        printf("--------------------\n\n");
+        printf("--------------------\n");
         
         printf("--->使用前请务必先看使用说明<--\n\n");
         printf("--------------------\n");
@@ -274,7 +264,7 @@ void vip()
         {
             char buff[128];
             system("clear");
-            printf("问题:本聊天室叫什么?\n");
+            printf("问题:本聊天室叫什么\n");
             printf("请输入答案:");
             memset(buff,0,128);
             fgets(buff,128,stdin);
@@ -415,7 +405,8 @@ void zhuce(void)
         sen.pro = 1;
         system("clear");
         printf("--------MT注册-------\n\n");
-        
+        //    printf("您的MT号为:%ld\n",id = get_ID());
+        //    printf("此号具有全球唯一性,请放心使用\n");
 
         printf("用户名:");
         memset(username,32,0);
@@ -562,7 +553,7 @@ void ftp(void)
         system("clear");
         printf("--------------ftp-----------\n\n");
         printf("----------------------------\n");
-        printf("---->MT会员双倍上行速度<----\n");
+        printf("--->MT会员双倍上下行速度<---\n");
         printf("----------------------------\n");
         printf("1----------上传文件---------\n");
         printf("2----------下载文件---------\n");
@@ -668,7 +659,6 @@ void ftpx(void)
         sen.pro = 10;
         printf("\n\n请输入你要下载的文件的序号:");
         fgets(sen.message,256,stdin);
-        sen.message[strlen(sen.message)-1] = '\0';
         
         printf("请输入你要保存的路径(/../../):");
         memset(bufx,0,256);
@@ -904,22 +894,13 @@ void hy(char name[])
             sprintf(buf,"%s%s%s%s",".MT",USER.username,"-",name);
             
 
-            if((fp = fopen(buf,"r")) == NULL)
+            fp = fopen(buf,"r");
+            while(fread(&buff,len_data,1,fp) > 0)
             {
-                fclose(fp);
-                printf("无聊天记录\n");
-                sleep(1);
+                printf("%s >>> %-30s%s\n",buff.I_name,buff.message,buff.time);
             }
-            else 
-            {
-                while(fread(&buff,len_data,1,fp) > 0)
-                {
-                    printf("%s >>> %-30s%s\n",buff.I_name,buff.message,buff.time);
-                }
-                printf("\n\n请按任意键返回...\n");
-                getchar();
-
-            }
+            printf("\n\n请按任意键返回...\n");
+            getchar();
         }
         else if(buf[0] == '3')
         {
@@ -1002,10 +983,11 @@ void ql(void)
         printf("-----------群聊----------\n\n");
         printf("1--------加入群组--------\n");
         printf("2-----查看群聊天记录-----\n");
-        printf("3-------加入私密群-------\n");
-        printf("5-------返回上一层-------\n");
-        printf("6----------注销----------\n");
-        printf("7----------退出----------\n");
+      //  printf("-----加入私密群----\n");
+     //   printf("---------创建私密群----\n")
+        printf("3-------返回上一层-------\n");
+        printf("4----------注销----------\n");
+        printf("5----------退出----------\n");
         printf("-------------------------\n\n");
 
         printf("请输入你的选择:");
@@ -1035,20 +1017,16 @@ void ql(void)
         }
         else if(buf[0] == '3')
         {
-            jsmq();
-        }
-        else if(buf[0] == '5')
-        {
             break;
         }
-        else if(buf[0] == '6')
+        else if(buf[0] == '4')
         {
             sen.pro = 6;
             strcpy(sen.message,"ZX");
             send(fd,&sen,len_data,0);
             MAIN();
         }
-        else if(buf[0] == '7')
+        else if(buf[0] == '5')
         {
             sen.pro = 6;
             strcpy(sen.message,"MT");
@@ -1059,103 +1037,15 @@ void ql(void)
     }
 }
 
-void jsmq(void)
+void smq(void)
 {
-    while(1)
-    {
-        sen.pro = 13;
-        system("clear");
-        printf("请输入该私密群密码:");
-        fgets(sen.Y_name,256,stdin);
-        sen.Y_name[strlen(sen.Y_name)-1] = '\0';
-        send(fd,&sen,len_data,0);
-
-        sleep(1);
-        if(strcmp(rec.message,"1") == 0)
-        {
-            smqz();
-        }
-        else
-        {
-            printf("密码不对\n");
-            sleep(1);
-        }
-        break;
-    }
+    
 }
 
-void smqz(void)
-{
-    char buf[10];
-    while(1)
-    {
-        system("clear");
-        printf("----------私密群聊----------\n\n");
-        printf("----------------------------\n");
-        printf("1-------查看聊天记录--------\n");
-        printf("2-----------聊天------------\n");
-        printf("3--------返回上一层---------\n");
-        printf("----------------------------\n");
-        printf("请输入你的选择:");
-        fgets(buf,10,stdin);
-        if(strlen(buf) > 2)
-        {
-            continue;
-        }
-        if(buf[0] == '1')
-        {
-            system("clear");
-            printf("--------群聊天记录--------\n\n");
-            FILE *fp;
-            struct data_info buff;
-            fp = fopen("smql","r");
-            while(fread(&buff,len_data,1,fp) > 0)
-            {
-                printf("%s >>> %-30s%s\n",buff.I_name,buff.message,buff.time);
-            }
-            printf("\n\n请按任意键返回...\n");
-            getchar();
-        }
-        if(buf[0] == '2')
-        {
-            system("clear");
-            sen.pro = 15;
-
-            printf("正在加入.......\n");
-            sleep(1);
-            system("clear");
-            send(fd,&sen,len_data,0);
-            printf("\n--------私密群聊中-------\n");
-            while(1)
-            {     
-                memset(sen.message,0,256);
-                fgets(sen.message,256,stdin);
-                sen.message[strlen(sen.message)-1] = '\0';  
-                send(fd,&sen,len_data,0);
-
-                if(strcmp(sen.message,"MT") == 0)
-                {
-                    break;
-                }
-        
-                FILE *fp;
-                
-                fp = fopen("./MT/smq","a");
-                fwrite(&sen,len_data,1,fp);
-                fclose(fp);
-            }
-        }
-        if(buf[0] == '3')
-        {
-            break;
-        }
-    }
-}
 
 void qz(void)
 {
     sen.pro = 5;
-
     printf("正在加入.......\n");
     sleep(1);
     system("clear");
@@ -1175,7 +1065,6 @@ void qz(void)
         
         FILE *fp;
         char buf[50];
-        
         sprintf(buf,"%s%s",".MTqunzu",USER.username);
         fp = fopen(buf,"a");
         fwrite(&sen,len_data,1,fp);

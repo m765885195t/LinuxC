@@ -25,7 +25,6 @@ struct user_info{          //用户信息结构体
     int man;
     int state;//0离线1在线2隐身3正在聊天   状态
     int vip;
-    int smq;
 
                  //    char autograph[:w256];
 }USER[50],*USERp;
@@ -38,7 +37,7 @@ struct data_info{       //私聊消息结构体
 //    long Y_ID;      
     char message[256];
    char time[20];
-    int pro;//1注册2登录3请求4聊天5群聊6修改状态7好友在线表8改密9上传文件10下载文件11下载文件列表12升级vip13创建私密群15
+    int pro;//1注册2登录3请求4聊天5群聊6修改状态7好友在线表8改密9上传文件10下载文件11下载文件列表12升级vip13创建私密群
 };
 
 struct ql_info{              //群聊信息结构体
@@ -57,16 +56,19 @@ struct file_info
 
 int len_data = sizeof(struct data_info);
 int num;
-int num2;
 
 struct smqcy{
     int fd;
-    char I_name[32];
-    char message[256];
+    char name[32];
     int man;
-}smqcy[50],*smqcyp;
+};
 
-
+struct smq_info{
+    char name[32];
+    char pass[32];
+    int man;
+    struct smqcy cyname[30];
+}smq[30];
 
 
 //通过用户名查找用户
@@ -94,17 +96,7 @@ struct ql_info * find2(char *name)
     }
     return NULL;
 }
-struct smqcy * find3(char *name)
-{
-    for(int i=1;i<50;i++)
-    {
-        if(strcmp(smqcy[i].I_name,name) == 0)
-        {
-            return &smqcy[i];
-        }
-    }
-    return NULL;
-}
+
 
 void * session(void *a);
 
@@ -115,6 +107,7 @@ void * session(void *a);
 int main()
 {
     memset(USER,0,sizeof(struct user_info)*50);
+    memset(USER,0,sizeof(struct smq_info)*30);
     USER[0].man = 1;
     strcpy(USER[0].username,"MT");
     strcpy(USER[0].password,"765885195"); //MT
@@ -122,16 +115,16 @@ int main()
     USER[0].vip = 1;
     strcpy(cy[0].I_name,"MT");
     cy[0].man = 1;
-     
-    FILE *fp2;
-    fp2 = fopen("/home/motian/linuxC/socket/.MT/smq","r");
-    for(int i=0;i<50;i++)
-    {
-        fread(&smqcy[i],sizeof(struct smqcy),1,fp2);
-    }
-    fclose(fp2);
-    
+  
     FILE *fp;
+/*    fp = fopen("/home/motian/linuxC/socket/.MT/smq","r");
+    for(int i=0;i<30;i++)
+    {
+        fread(&smq[i],sizeof(struct smq_info),1,fp);
+    }
+    fclose(fp);
+*/
+
     fp = fopen("/home/motian/linuxC/socket/.MT/USER","r");
     for(int i=1;i<50;i++)
     {
@@ -564,85 +557,60 @@ void * session(void *a)
                 USERp->vip = 1;
             }            
         }
-        if(rec.pro == 13)
-        {
-            if(strcmp(rec.Y_name,"MT") == 0)
+        if(rec.pro == 13)   //创建私密群
+        {  
+            USERp = find(rec.I_name);
+
+            struct smq_info buf;
+            memset(&buf,0,sizeof(struct smq_info));
+            strcpy(buf.name,sen.message);
+            strcpy(buf.pass,sen.Y_name);
+            buf.man = 1;
+            buf.cyname[0].fd = USERp->fd;
+            strcpy(buf.cyname[0].name,rec.I_name);
+            buf.cyname[0].man = 1;
+
+            FILE *fp;
+            int flag = 0;
+            fp = fopen("/home/motian/linuxC/socket/.MT/smq","a+");    
+            for(i=0;i<30;i++)
             {
+                if(smq[i].man == 1)
+                {
+                    if(strcmp(sen.message,smq[i].name) == 0)
+                    {
+                        flag = 1;
+                    }
+                }
+            }
+            if(!flag)
+            {  
+                fwrite(&buf,sizeof(struct smq_info),1,fp);
                 memset(sen.message,0,256);
                 strcpy(sen.message,"1");
-                send(fd,&sen,len_data,0);
+                send(fd,&sen,len_data,0); 
             }
-
+            else 
+            {
+                memset(sen.message,0,256);
+                strcpy(sen.message,"2");
+                send(fd,&sen,len_data,0); 
+            }
+            fclose(fp);
         }
-        if(rec.pro == 15)
+        if(rec.pro == 14)
         {
-            char s[2];
-            int flag = 0;
-            puts("私密群聊中");
             for(i=0;i<30;i++)
             {
-                if(smqcy[i].man == 1)
+                if(smq[i].man == 1)
                 {
-                    if(strcmp(smqcy[i].I_name,rec.I_name) == 0)
-                    {
-                        flag = 0;
-                        break;
-                    } 
-                }
-                else
-                {
-                    num2++;
-                    memset(smqcy[i].I_name,0,32);
-                    strcpy(smqcy[i].I_name,rec.I_name);
-                    smqcy[i].fd = fd;
-                    smqcy[i].man = 1;
-                    flag = 1; 
-                    break;
-                }
-            }
-            if(flag)
-            {
-                strcpy(sen.I_name,rec.I_name);
-                sprintf(s,"%d",num2);
-                s[strlen(s)]='\0';
-                sprintf(sen.message,"%s%d%s","加入了私密群组,群聊人数共",num2,"人\n");
-                
-            }
-            else
-            {
-                if(strcmp(rec.message,"MT") == 0)
-                {
-                    strcpy(sen.I_name,rec.I_name);
-                    sprintf(sen.message,"%s%d%s","退出了私密群组,群聊人数共",num2-1,"人");
-                    smqcyp = find3(rec.I_name);
-                    smqcyp->man = 0;
-                    num2-- ;
-                }
-                else
-                {
-                    strcpy(sen.message,rec.message);
-                    strcpy(sen.I_name,rec.I_name);
-                }
-            }
-            for(i=0;i<30;i++)
-            {
-                if(smqcy[i].man == 1)
-                {
-                    if(flag)
-                    {
-                        send(smqcy[i].fd,&sen,len_data,0);
-                    }
-                    else
-                    {
-                        if(strcmp(rec.I_name,smqcy[i].I_name) != 0)
-                        {
-                            send(smqcy[i].fd,&sen,len_data,0);
-                        }
-                    }
-                }
+                    memset(sen.message,0,256);
+                    strcpy(sen.message,smq[i].name);
+                    send(fd,&sen,len_data,0);
+                }   
             }
         }
-    }       
+    }
 }
 
 
